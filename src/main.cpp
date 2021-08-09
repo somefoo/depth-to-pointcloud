@@ -4,33 +4,23 @@
 #include <OpenEXR/OpenEXRConfig.h>
 
 #include <cstddef>
+#include <fstream>
 #include <iostream>
 #include <ostream>
-#include <fstream>
 //#include <OpenEXR/ImfArray.h>
 //#include <OpenEXR/ImfNamespace.h>
 #include <OpenEXR/ImfArray.h>
 #include <OpenEXR/ImfInputFile.h>
 
 #include <limits>
+#include <random>
 
-//static float upper_cut = std::numeric_limits<float>::max();
+// static float upper_cut = std::numeric_limits<float>::max();
 static float upper_cut = 65500;
 static float lower_cut = std::numeric_limits<float>::min();
+static float keep_probability = 0.5;
+static float variance = 1;
 
-bool is_valid(float value){
-  return value < upper_cut && value > lower_cut;
-}
-
-std::size_t count_valid_points(const Imf::Array2D<float> &depth_pixels){
-  std::size_t valid_counter = 0;
-  for (std::size_t y = 0; y < depth_pixels.height(); ++y) {
-    for (std::size_t x = 0; x < depth_pixels.width(); ++x) {
-      if(is_valid(depth_pixels[y][x])) valid_counter++;
-    }
-  }
-  return valid_counter;
-}
 
 void print_detail_ascii(const Imf::Array2D<float> &depth_pixels) {
   float color = depth_pixels[0][0];
@@ -38,7 +28,7 @@ void print_detail_ascii(const Imf::Array2D<float> &depth_pixels) {
     for (std::size_t x = 0; x < depth_pixels.width(); ++x) {
       if (depth_pixels[y][x] != color) {
         std::cout << "#";
-      }else{
+      } else {
         std::cout << " ";
       }
     }
@@ -60,26 +50,46 @@ void sanity_check(const Imf::Array2D<float> &depth_pixels) {
 }
 
 // See http://pointclouds.org/documentation/tutorials/pcd_file_format.html
-void print_pcd(const Imf::Array2D<float> &depth_pixels, std::ostream& ostream = std::cout) {
-  std::size_t valid_count = count_valid_points(depth_pixels);
-  ostream << "# .PCD v.7 - Point Cloud Data file format\n";
-  ostream << "VERSION .7\n";
-  ostream << "FIELDS x y z rgb\n";
-  ostream << "SIZE 4 4 4 4\n";
-  ostream << "TYPE F F F F\n";
-  ostream << "COUNT 1 1 1 1\n";
-  ostream << "WIDTH " << valid_count << '\n';
-  ostream << "HEIGHT 1\n";
-  ostream << "VIEWPOINT 0 0 0 1 0 0 0\n";
-  ostream << "POINTS " << valid_count << '\n';
-  ostream << "DATA ascii\n";
+void print_pcd(const Imf::Array2D<float> &depth_pixels,
+               std::ostream &ostream = std::cout) {
+  std::random_device rd{};
+  std::mt19937 gen{rd()};
+  std::normal_distribution<> d{0, 1};
+  std::uniform_real_distribution<> u{0.0, 1.0};
+
+  std::ostringstream header_stream;
+  std::ostringstream point_stream;
+
+  std::size_t point_count = 0;
+
   for (std::size_t y = 0; y < depth_pixels.height(); ++y) {
     for (std::size_t x = 0; x < depth_pixels.width(); ++x) {
-      if(is_valid(depth_pixels[y][x])){
-        ostream << x << " " << y << " " << depth_pixels[y][x] * 2 << " " << 4.2108e+06 << '\n';
+      float value = depth_pixels[y][x];
+      bool is_inside = value < upper_cut && value > lower_cut;
+      bool is_kept = u(gen) <= keep_probability;
+
+      if (is_inside && is_kept) {
+        point_stream << x + d(gen) << " " << y + d(gen) << " " << value*2 + d(gen)
+                     << " " << 4.2108e+06 << '\n';
+        point_count++;
       }
     }
   }
+
+  header_stream << "# .PCD v.7 - Point Cloud Data file format\n";
+  header_stream << "VERSION .7\n";
+  header_stream << "FIELDS x y z rgb\n";
+  header_stream << "SIZE 4 4 4 4\n";
+  header_stream << "TYPE F F F F\n";
+  header_stream << "COUNT 1 1 1 1\n";
+  header_stream << "WIDTH " << point_count << '\n';
+  header_stream << "HEIGHT 1\n";
+  header_stream << "VIEWPOINT 0 0 0 1 0 0 0\n";
+  header_stream << "POINTS " << point_count << '\n';
+  header_stream << "DATA ascii\n";
+
+  ostream << header_stream.str();
+  ostream << point_stream.str();
   ostream.flush();
 }
 
@@ -94,12 +104,12 @@ int main(int argc, char *argv[]) {
 
   Imf::Array2D<float> depth_pixels(height, width);
   const auto base_ptr =
-      (char *) (&depth_pixels[0][0] - dim.min.x - dim.min.y * width);
+      (char *)(&depth_pixels[0][0] - dim.min.x - dim.min.y * width);
   const std::size_t x_stride = sizeof(depth_pixels[0][0]);
   const std::size_t y_stride = sizeof(depth_pixels[0][0]) * width;
 
   std::cout << x_stride << " " << y_stride << "\n";
- 
+
   Imf::FrameBuffer frame_buffer;
   frame_buffer.insert("Z", Imf::Slice(Imf::FLOAT, base_ptr, x_stride, y_stride,
                                       1, 1, std::numeric_limits<float>::max()));
@@ -108,6 +118,6 @@ int main(int argc, char *argv[]) {
   file.readPixels(dim.min.y, dim.max.y);
   sanity_check(depth_pixels);
 
-  std::ofstream stream ("new.pcd", std::ofstream::binary);
+  std::ofstream stream("new.pcd", std::ofstream::binary);
   print_pcd(depth_pixels, stream);
 }
