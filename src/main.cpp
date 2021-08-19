@@ -14,6 +14,7 @@
 
 #include <limits>
 #include <random>
+#include <array>
 
 // static float upper_cut = std::numeric_limits<float>::max();
 static float upper_cut = 65500;
