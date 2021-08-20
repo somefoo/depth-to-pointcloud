@@ -1,6 +1,7 @@
 #include <ImfFrameBuffer.h>
 #include <ImfPixelType.h>
 #include <OpenEXR/ImfArray.h>
+#include <OpenEXR/ImfChannelList.h>
 #include <OpenEXR/ImfInputFile.h>
 #include <OpenEXR/ImfRgbaFile.h>
 #include <OpenEXR/OpenEXRConfig.h>
@@ -121,7 +122,7 @@ void print_pcd(const Imf::Array2D<float> &depth_pixels,
 
 // Prints the help text
 void print_help() {
-  std::cout << "depth-to-pointcloud - Simple EXR with Z-Buffer to PCD point "
+  std::cout << "depth-to-pointcloud - OpenEXR with Z Buffer to PCD point "
                "cloud converter.\n";
   std::cout << '\n';
   std::cout
@@ -148,7 +149,7 @@ void print_help() {
       << "                                     has to be in [0,infinity]\n";
   std::cout << "  --rgb <float>[=<4.2108e+06>]      Sets color of the points\n";
   std::cout << '\n';
-  std::cout << " -h, --help                         Prints this message.\n";
+  std::cout << " -h, --help                         Prints this message\n";
   std::cout << '\n';
   std::cout << '\n';
 
@@ -200,6 +201,14 @@ int main(int argc, char *argv[]) {
 
   // Load the file
   Imf::InputFile file(input_path.c_str());
+  const Imf::ChannelList &channels = file.header().channels();
+
+  if(channels.findChannel("Z") == nullptr){
+    std::cerr << "Error, the image does not contain a Z Buffer.\n";
+    exit(1);
+  }
+
+  //std::cout << file.header().channels() << std::endl;
   Imath::Box2i dim = file.header().dataWindow();
 
   const int width = dim.max.x - dim.min.x + 1;
