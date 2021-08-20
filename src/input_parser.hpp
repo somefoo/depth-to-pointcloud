@@ -4,7 +4,7 @@
 #include <string_view>
 #include <typeinfo>
 
-// A simple bit of code to parse arguments.
+// Returns the value of a '-flag value' pair.
 template <typename RT>
 static constexpr RT parse_args(const int argc, char *argv[],
                                const std::string_view name,
@@ -37,4 +37,15 @@ static constexpr RT parse_args(const int argc, char *argv[],
     }
   }
   return default_value;
+}
+
+// Returns true if a flag '-flag' is set.
+static constexpr bool parse_args_set(const int argc, char *argv[],
+                                     const std::string_view name) {
+  for (std::size_t i = 1; i < argc; ++i) {
+    if (argv[i] == name) {
+      return true;
+    }
+  }
+  return false;
 }

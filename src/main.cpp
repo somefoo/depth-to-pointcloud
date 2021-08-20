@@ -13,41 +13,19 @@
 #include <ostream>
 #include <random>
 
-static float upper_cut = 65500;
-static float lower_cut = std::numeric_limits<float>::min();
-static float keep_probability = 1.0;
+#include "input_parser.hpp"
+
+// Variables which can be set
+static float upper_cut = std::numeric_limits<float>::infinity();
+static float lower_cut = -std::numeric_limits<float>::infinity();
+static float keep_fraction = 1.0;
 static float variance = 0.0;
 
 static float sensor_size = 36;   // mm diagonal
 static float focal_length = 50;  // mm
+static float rgb = 4.2108e+06;
 
-void print_detail_ascii(const Imf::Array2D<float> &depth_pixels) {
-  float color = depth_pixels[0][0];
-  for (std::size_t y = 0; y < depth_pixels.height(); ++y) {
-    for (std::size_t x = 0; x < depth_pixels.width(); ++x) {
-      if (depth_pixels[y][x] != color) {
-        std::cout << "#";
-      } else {
-        std::cout << " ";
-      }
-    }
-    std::cout << '\n';
-  }
-}
-
-void sanity_check(const Imf::Array2D<float> &depth_pixels) {
-  float color = depth_pixels[0][0];
-  for (std::size_t y = 0; y < depth_pixels.height(); ++y) {
-    for (std::size_t x = 0; x < depth_pixels.width(); ++x) {
-      if (depth_pixels[y][x] != color) {
-        return;
-      }
-    }
-  }
-  std::cerr << "Error: depth image is homogenous, exiting.\n";
-  exit(1);
-}
-
+// Ye, this ain't gonna win perfomance awards! 
 const std::array<float, 3> get_transformed(
     const Imf::Array2D<float> &depth_pixels, const int x, const int y) {
   const float aspect_ratio =
@@ -61,8 +39,7 @@ const std::array<float, 3> get_transformed(
   // a = sqrt(sensor_size^2 / (1 + aspect_ratio^2))
   const float sensor_height =
       std::sqrt(std::pow(sensor_size, 2) / (1 + std::pow(aspect_ratio, 2)));
-  const float sensor_width =
-      sensor_height * aspect_ratio;  // a^2 + b^2 = c^2 => a^2 = c^2 - b^2
+  const float sensor_width = sensor_height * aspect_ratio;
 
   const float x_position_on_sensor =
       static_cast<float>(x) / depth_pixels.width() * sensor_width;
@@ -114,16 +91,12 @@ void print_pcd(const Imf::Array2D<float> &depth_pixels,
       float value = depth_pixels[y][x];
       bool is_inside =
           value < upper_cut && value > lower_cut;  // Within valid depth
-      bool is_kept = u(gen) <= keep_probability;
+      bool is_kept = u(gen) <= keep_fraction;
 
       if (is_inside && is_kept) {
         std::array<float, 3> position = get_transformed(depth_pixels, x, y);
         point_stream << position[0] + d(gen) << " " << position[1] + d(gen)
-                     << " " << position[2] + d(gen) << " " << 4.2108e+06
-                     << '\n';
-        // point_stream << x + d(gen) << " " << y + d(gen) << " " << value*2 +
-        // d(gen)
-        //             << " " << 4.2108e+06 << '\n';
+                     << " " << position[2] + d(gen) << " " << rgb << '\n';
         point_count++;
       }
     }
@@ -146,14 +119,91 @@ void print_pcd(const Imf::Array2D<float> &depth_pixels,
   ostream.flush();
 }
 
+// Prints the help text
+void print_help() {
+  std::cout << "depth-to-pointcloud - Simple EXR with Z-Buffer to PCD point "
+               "cloud converter.\n";
+  std::cout << '\n';
+  std::cout
+      << "Usage: run-depth-to-pointcloud --input [FILE1] --output [FILE2]\n";
+  std::cout << "Reads FILE1 to generate a .pcd file FILE2\n";
+  std::cout << '\n';
+
+  std::cout << "Options: \n";
+  std::cout
+      << "  --sensor-size  <int>[=<36>]       Pinhole-camera sensor size\n";
+  std::cout
+      << "  --focal-length <int>[=<50>]       Pinhole-camera focal length\n";
+  std::cout
+      << "  --upper-cut <float>[=<infinity>]  Cuts off points too far away\n";
+  std::cout
+      << "  --lower-cut <float>[=<-infinity>] Cuts off points too close\n";
+  std::cout
+      << "  --focal-length <int>[=<50>]       Pinhole-camera focal length\n";
+  std::cout
+      << "  --keep-fraction <float>[=<1.0>]   Percentage of points used\n";
+  std::cout << "                                     has to be in [0,1]\n";
+  std::cout << "  --add-noise <float>[=<0.0>]       Adds gaussian noise\n";
+  std::cout
+      << "                                     has to be in [0,infinity]\n";
+  std::cout << "  --rgb <float>[=<4.2108e+06>]      Sets color of the points\n";
+  std::cout << '\n';
+  std::cout << " -h, --help                         Prints this message.\n";
+  std::cout << '\n';
+  std::cout << '\n';
+
+  std::cout << "Example 1:\n";
+  std::cout << "./run-depth-to-pointcloud --input image.exr --output "
+               "pointcloud.pcd\n";
+  std::cout << '\n';
+  std::cout
+      << "Example 2 (keep 50\% of points, add noise with variance of 2.0):\n";
+  std::cout << "./run-depth-to-pointcloud --input image.exr --output "
+               "pointcloud.pcd \\\n";
+  std::cout << "  --sensor-size 10 --focal-length 42 --keep-fraction 0.5 "
+               "--add-noise 2.0 \\\n";
+  std::cout << "  --lower-cut 100 --upper-cut 65500 \n";
+  std::cout << '\n';
+  std::cout << "Example 3 (output will default to image.pcd):\n";
+  std::cout << "./run-depth-to-pointcloud --input image.exr\n";
+  std::cout << std::endl;
+}
+
 int main(int argc, char *argv[]) {
-  // TODO add checks
-  Imf::InputFile file(argv[1]);
+  // Do input parsing
+
+  if (argc == 1 || parse_args_set(argc, argv, "-h") ||
+      parse_args_set(argc, argv, "--help")) {
+    print_help();
+    exit(0);
+  }
+
+  const std::string input_path =
+      parse_args<std::string>(argc, argv, "--input", "");
+  if (input_path == "") {
+    std::cerr << "Error, no input file given.\n";
+    exit(1);
+  }
+
+  std::string output_path(input_path);
+  output_path = output_path.substr(0, output_path.length() - 4) + ".pcd";
+  output_path = parse_args<std::string>(argc, argv, "--output", output_path);
+
+  sensor_size = parse_args<int>(argc, argv, "--sensor_size", sensor_size);
+  focal_length = parse_args<int>(argc, argv, "--focal-length", focal_length);
+  keep_fraction =
+      parse_args<float>(argc, argv, "--keep-fraction", keep_fraction);
+  variance = parse_args<float>(argc, argv, "--add-noise", variance);
+  lower_cut = parse_args<float>(argc, argv, "--lower-cut", lower_cut);
+  upper_cut = parse_args<float>(argc, argv, "--upper-cut", upper_cut);
+  rgb = parse_args<float>(argc, argv, "--rgb", rgb);
+
+  // Load the file
+  Imf::InputFile file(input_path.c_str());
   Imath::Box2i dim = file.header().dataWindow();
 
   const int width = dim.max.x - dim.min.x + 1;
   const int height = dim.max.y - dim.min.y + 1;
-  std::cout << "Image WxH: " << width << "x" << height << '\n';
 
   Imf::Array2D<float> depth_pixels(height, width);
   const auto base_ptr =
@@ -161,19 +211,14 @@ int main(int argc, char *argv[]) {
   const std::size_t x_stride = sizeof(depth_pixels[0][0]);
   const std::size_t y_stride = sizeof(depth_pixels[0][0]) * width;
 
-  std::cout << x_stride << " " << y_stride << "\n";
-
   Imf::FrameBuffer frame_buffer;
   frame_buffer.insert("Z", Imf::Slice(Imf::FLOAT, base_ptr, x_stride, y_stride,
                                       1, 1, std::numeric_limits<float>::max()));
 
   file.setFrameBuffer(frame_buffer);
   file.readPixels(dim.min.y, dim.max.y);
-  sanity_check(depth_pixels);
 
-
-  std::string output_name(argv[1]);
-  output_name = output_name.substr(0, output_name.length() - 4);
-  std::ofstream stream(output_name + ".pcd", std::ofstream::binary);
+  // Create point cloud
+  std::ofstream stream(output_path, std::ofstream::binary);
   print_pcd(depth_pixels, stream);
 }
