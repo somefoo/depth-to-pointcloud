@@ -11,7 +11,7 @@ FetchContent_MakeAvailable(SetupHunter)
 # Normal CMake content:
 
 project(depth-to-pointcloud)
-set (CMAKE_CXX_STANDARD 17)
+set (CMAKE_CXX_STANDARD 20)
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
