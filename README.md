@@ -25,7 +25,7 @@ make
 ```
 ## Application usage
 ```
-depth-to-pointcloud - Simple EXR with Z-Buffer to PCD point cloud converter.
+depth-to-pointcloud - OpenEXR with Z-Buffer to PCD point cloud converter.
 
 Usage: run-depth-to-pointcloud --input [FILE1] --output [FILE2]
 Reads FILE1 to generate a .pcd file FILE2
