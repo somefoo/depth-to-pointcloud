@@ -26,7 +26,7 @@ static float sensor_size = 36;   // mm diagonal
 static float focal_length = 50;  // mm
 static float rgb = 4.2108e+06;
 
-// Ye, this ain't gonna win perfomance awards! 
+// Ye, this ain't gonna win perfomance awards!
 const std::array<float, 3> get_transformed(
     const Imf::Array2D<float> &depth_pixels, const int x, const int y) {
   const float aspect_ratio =
@@ -203,12 +203,11 @@ int main(int argc, char *argv[]) {
   Imf::InputFile file(input_path.c_str());
   const Imf::ChannelList &channels = file.header().channels();
 
-  if(channels.findChannel("Z") == nullptr){
+  if (channels.findChannel("Z") == nullptr) {
     std::cerr << "Error, the image does not contain a Z Buffer.\n";
     exit(1);
   }
 
-  //std::cout << file.header().channels() << std::endl;
   Imath::Box2i dim = file.header().dataWindow();
 
   const int width = dim.max.x - dim.min.x + 1;
