@@ -12,6 +12,7 @@
 #include <limits>
 #include <ostream>
 #include <random>
+#include <array>
 
 #include "input_parser.hpp"
 
