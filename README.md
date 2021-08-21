@@ -9,6 +9,10 @@ A simple tool to convert a linear depth image (z-depth) to a point cloud (using 
 * CMake 3.14 or greater
 * That is pretty much it, all other dependencies will be automatically downloaded and compiled by CMake/Hunter.
 
+# Notice
+The distortion correction is not working correctly at the moment, WIP! 
+
+
 # How to use
 ## Compile
 ``` bash
