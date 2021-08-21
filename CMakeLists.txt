@@ -23,8 +23,8 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 find_package(OpenEXR CONFIG REQUIRED)
 
 
-add_executable(run-depth-to-pointcloud
+add_executable(depth-to-pointcloud
   src/main.cpp
   )
 
-target_link_libraries(run-depth-to-pointcloud PUBLIC OpenEXR::OpenEXR)
+target_link_libraries(depth-to-pointcloud PUBLIC OpenEXR::OpenEXR)

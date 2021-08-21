@@ -22,7 +22,7 @@ make
 ```
 depth-to-pointcloud - OpenEXR with Z Buffer to PCD point cloud converter.
 
-Usage: run-depth-to-pointcloud --input [FILE1] --output [FILE2]
+Usage: depth-to-pointcloud --input [FILE1] --output [FILE2]
 Reads FILE1 to generate a .pcd file FILE2
 
 Options: 
@@ -40,15 +40,15 @@ Options:
 
 
 Example 1:
-./run-depth-to-pointcloud --input image.exr --output pointcloud.pcd
+./depth-to-pointcloud --input image.exr --output pointcloud.pcd
 
 Example 2 (keep 50% of points, add noise with variance of 2.0):
-./run-depth-to-pointcloud --input image.exr --output pointcloud.pcd \
+./depth-to-pointcloud --input image.exr --output pointcloud.pcd \
   --sensor-width 10 --focal-length 42 --keep-fraction 0.5 --add-noise 2.0 \
   --lower-cut 100 --upper-cut 65500 
 
 Example 3 (output will default to image.pcd):
-./run-depth-to-pointcloud --input image.exr
+./depth-to-pointcloud --input image.exr
 
 ```
 

@@ -124,7 +124,7 @@ void print_help() {
                "cloud converter.\n";
   std::cout << '\n';
   std::cout
-      << "Usage: run-depth-to-pointcloud --input [FILE1] --output [FILE2]\n";
+      << "Usage: depth-to-pointcloud --input [FILE1] --output [FILE2]\n";
   std::cout << "Reads FILE1 to generate a .pcd file FILE2\n";
   std::cout << '\n';
 
@@ -150,19 +150,19 @@ void print_help() {
   std::cout << '\n';
 
   std::cout << "Example 1:\n";
-  std::cout << "./run-depth-to-pointcloud --input image.exr --output "
+  std::cout << "./depth-to-pointcloud --input image.exr --output "
                "pointcloud.pcd\n";
   std::cout << '\n';
   std::cout
       << "Example 2 (keep 50\% of points, add noise with variance of 2.0):\n";
-  std::cout << "./run-depth-to-pointcloud --input image.exr --output "
+  std::cout << "./depth-to-pointcloud --input image.exr --output "
                "pointcloud.pcd \\\n";
   std::cout << "  --sensor-width 10 --focal-length 42 --keep-fraction 0.5 "
                "--add-noise 2.0 \\\n";
   std::cout << "  --lower-cut 100 --upper-cut 65500 \n";
   std::cout << '\n';
   std::cout << "Example 3 (output will default to image.pcd):\n";
-  std::cout << "./run-depth-to-pointcloud --input image.exr\n";
+  std::cout << "./depth-to-pointcloud --input image.exr\n";
   std::cout << std::endl;
 }
 
