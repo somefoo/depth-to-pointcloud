@@ -5,11 +5,10 @@
 A simple tool to convert a linear depth image (z-depth) to a point cloud (OpenEXR to PCD)
 
 # Requirements
-* GCC with basic C++20 support (9.3 from the Ubuntu 20.04 repository works)
-* CMake 3.14 or greater
-* That is pretty much it, all other dependencies will be automatically downloaded and compiled by CMake/Hunter.
+* A compiler with basic C++20 support *(GCC 9.3.0 from the Ubuntu 20.04 repository works)*
+* CMake 3.14 or greater *(Required by Hunter)*
+* That is pretty much it, other dependencies will be downloaded and compiled automatically by CMake/[Hunter](https://github.com/cpp-pm/hunter).
 
-# How to use
 ## Compile
 ``` bash
 git clone https://github.com/somefoo/depth-to-pointcloud.git
