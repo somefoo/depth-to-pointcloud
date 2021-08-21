@@ -2,7 +2,7 @@
 ![blender-to-point-cloud](https://user-images.githubusercontent.com/50917034/130279207-4d3ee733-a2da-4a83-9750-9b38b9a99cc0.jpg)
 *The image above shows a scene rendered in [Blender](https://www.blender.org/)*, stored as an OpenEXR file with a Z Buffer and converted into a point cloud with some noise.
 
-A simple tool to convert a linear depth image (z-depth) to a point cloud (using the OpenEXR image format)
+A simple tool to convert a linear depth image (z-depth) to a point cloud (OpenEXR to PCD)
 
 # Requirements
 * GCC with basic C++20 support (9.3 from the Ubuntu 20.04 repository works)
