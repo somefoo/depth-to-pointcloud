@@ -21,17 +21,16 @@ make
 ```
 ## Application usage
 ```
-depth-to-pointcloud - Simple EXR with Z-Buffer to PCD point cloud converter.
+depth-to-pointcloud - OpenEXR with Z Buffer to PCD point cloud converter.
 
 Usage: run-depth-to-pointcloud --input [FILE1] --output [FILE2]
 Reads FILE1 to generate a .pcd file FILE2
 
 Options: 
-  --sensor-size  <int>[=<36>]       Pinhole-camera sensor size
-  --focal-length <int>[=<50>]       Pinhole-camera focal length
+  --focal-length <float>[=<50>]     Pinhole-camera focal length
+  --sensor-width  <float>[=<36>]    Pinhole-camera sensor size
   --upper-cut <float>[=<infinity>]  Cuts off points too far away
   --lower-cut <float>[=<-infinity>] Cuts off points too close
-  --focal-length <int>[=<50>]       Pinhole-camera focal length
   --keep-fraction <float>[=<1.0>]   Percentage of points used
                                      has to be in [0,1]
   --add-noise <float>[=<0.0>]       Adds gaussian noise
@@ -46,7 +45,7 @@ Example 1:
 
 Example 2 (keep 50% of points, add noise with variance of 2.0):
 ./run-depth-to-pointcloud --input image.exr --output pointcloud.pcd \
-  --sensor-size 10 --focal-length 42 --keep-fraction 0.5 --add-noise 2.0 \
+  --sensor-width 10 --focal-length 42 --keep-fraction 0.5 --add-noise 2.0 \
   --lower-cut 100 --upper-cut 65500 
 
 Example 3 (output will default to image.pcd):

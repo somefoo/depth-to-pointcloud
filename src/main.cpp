@@ -22,8 +22,8 @@ static float lower_cut = -std::numeric_limits<float>::infinity();
 static float keep_fraction = 1.0;
 static float variance = 0.0;
 
-static float sensor_size = 36;   // mm diagonal
-static float focal_length = 50;  // mm
+static float sensor_width = 36.0f;  // mm diagonal
+static float focal_length = 50.0f;  // mm
 static float rgb = 4.2108e+06;
 
 // Ye, this ain't gonna win perfomance awards!
@@ -32,20 +32,12 @@ const std::array<float, 3> get_transformed(
   const float aspect_ratio =
       static_cast<float>(depth_pixels.width()) / depth_pixels.height();
 
-  // We need to find a such that:
-  // a^2 + (aspect_ratio * a)^2 = sensor_size^2
-  // a^2 + aspect_ratio^2 * a^2 = sensor_size^2 <=>
-  // a^2 * (1 + aspect_ratio^2) = sensor_size^2 <=>
-  // a^2 = sensor_size^2 / (1 + aspect_ratio^2) <=>
-  // a = sqrt(sensor_size^2 / (1 + aspect_ratio^2))
-  const float sensor_height =
-      std::sqrt(std::pow(sensor_size, 2) / (1 + std::pow(aspect_ratio, 2)));
-  const float sensor_width = sensor_height * aspect_ratio;
+  const float sensor_height = sensor_width / aspect_ratio;
 
   const float x_position_on_sensor =
-      static_cast<float>(x) / depth_pixels.width() * sensor_width;
+      sensor_width * static_cast<float>(x) / depth_pixels.width();
   const float y_position_on_sensor =
-      static_cast<float>(y) / depth_pixels.height() * sensor_height;
+      sensor_height * static_cast<float>(y) / depth_pixels.height();
 
   const float centered_x_position_on_sensor =
       x_position_on_sensor - sensor_width / 2;
@@ -60,12 +52,18 @@ const std::array<float, 3> get_transformed(
   std::array<float, 3> direction{origin[0] - focal_point[0],
                                  origin[1] - focal_point[1],
                                  origin[2] - focal_point[2]};
+#if 0  // This branch will not correct spherical distortion
   const float direction_length =
       std::sqrt(std::pow(direction[0], 2) + std::pow(direction[1], 2) +
                 std::pow(direction[2], 2));
-  direction[0] /= direction_length;
-  direction[1] /= direction_length;
-  direction[2] /= direction_length;
+   direction[0] /= direction_length;
+   direction[1] /= direction_length;
+   direction[2] /= direction_length;
+#else
+  direction[0] /= focal_length;
+  direction[1] /= focal_length;
+  direction[2] /= focal_length;
+#endif
 
   // We assume (0,0,0) to be the center of the camera (the focal point is at
   // this position)
@@ -132,15 +130,13 @@ void print_help() {
 
   std::cout << "Options: \n";
   std::cout
-      << "  --sensor-size  <int>[=<36>]       Pinhole-camera sensor size\n";
+      << "  --focal-length <float>[=<50>]     Pinhole-camera focal length\n";
   std::cout
-      << "  --focal-length <int>[=<50>]       Pinhole-camera focal length\n";
+      << "  --sensor-width  <float>[=<36>]    Pinhole-camera sensor size\n";
   std::cout
       << "  --upper-cut <float>[=<infinity>]  Cuts off points too far away\n";
   std::cout
       << "  --lower-cut <float>[=<-infinity>] Cuts off points too close\n";
-  std::cout
-      << "  --focal-length <int>[=<50>]       Pinhole-camera focal length\n";
   std::cout
       << "  --keep-fraction <float>[=<1.0>]   Percentage of points used\n";
   std::cout << "                                     has to be in [0,1]\n";
@@ -161,7 +157,7 @@ void print_help() {
       << "Example 2 (keep 50\% of points, add noise with variance of 2.0):\n";
   std::cout << "./run-depth-to-pointcloud --input image.exr --output "
                "pointcloud.pcd \\\n";
-  std::cout << "  --sensor-size 10 --focal-length 42 --keep-fraction 0.5 "
+  std::cout << "  --sensor-width 10 --focal-length 42 --keep-fraction 0.5 "
                "--add-noise 2.0 \\\n";
   std::cout << "  --lower-cut 100 --upper-cut 65500 \n";
   std::cout << '\n';
@@ -190,8 +186,8 @@ int main(int argc, char *argv[]) {
   output_path = output_path.substr(0, output_path.length() - 4) + ".pcd";
   output_path = parse_args<std::string>(argc, argv, "--output", output_path);
 
-  sensor_size = parse_args<int>(argc, argv, "--sensor_size", sensor_size);
-  focal_length = parse_args<int>(argc, argv, "--focal-length", focal_length);
+  sensor_width = parse_args<float>(argc, argv, "--sensor-width", sensor_width);
+  focal_length = parse_args<float>(argc, argv, "--focal-length", focal_length);
   keep_fraction =
       parse_args<float>(argc, argv, "--keep-fraction", keep_fraction);
   variance = parse_args<float>(argc, argv, "--add-noise", variance);
