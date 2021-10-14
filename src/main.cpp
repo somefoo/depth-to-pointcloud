@@ -26,7 +26,7 @@ static float sensor_width = 36.0f;  // mm diagonal
 static float focal_length = 50.0f;  // mm
 static float rgb = 4.2108e+06;
 
-// Ye, this ain't gonna win perfomance awards!
+// Ye, this ain't gonna win performance awards!
 const std::array<float, 3> get_transformed(
     const Imf::Array2D<float> &depth_pixels, const int x, const int y) {
   const float aspect_ratio =
